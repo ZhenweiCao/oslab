@@ -5,6 +5,8 @@
       <option name="excludeList">
         <list>
           <option value="org.apache.hadoop:hadoop-common" />
+          <option value="org.apache.hadoop:hadoop-client" />
+          <option value="org.apache.hadoop:hadoop-hdfs" />
         </list>
       </option>
     </inspection_tool>

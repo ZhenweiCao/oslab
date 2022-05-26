@@ -30,6 +30,9 @@ class Test{
     public void run() throws Exception {
         String uri = "hdfs://127.0.0.1:9000/";
         Configuration config = new Configuration();
+        // Requires explicit setting s file system,
+        // reference: https://www.cnblogs.com/justinzhang/p/4983673.html
+        config.set("fs.hdfs.impl", "org.apache.hadoop.hdfs.DistributedFileSystem");
         FileSystem fs = FileSystem.get(URI.create(uri), config);
 
         FileStatus[] statuses = fs.listStatus(new Path("/user/oslab"));
