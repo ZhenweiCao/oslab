@@ -26,6 +26,7 @@ public class FPGrowth {
 
 
      public int originTransNum = 0;
+     public long minNum;
 //    public double minSupp = 0.092;
 
     public static void main(String[] args) {
@@ -38,6 +39,7 @@ public class FPGrowth {
             fpGrowth.readFile(host, inputFileUri);
             fpGrowth.getHeadTable(minSupp);
             fpGrowth.getFPTree();
+            fpGrowth.getFreq();
         } catch (Exception e) {
             System.out.println("catch an exception" + e);
             return;
@@ -62,6 +64,16 @@ public class FPGrowth {
                 }
             }
             return null;
+        }
+        public boolean deleteChildNode(Integer id) {
+            for (Node childNode: childNodes){
+                if (childNode.itemId == id){
+                    childNode.parentNode = null;
+                    childNodes.remove(childNode);
+                    return true;
+                }
+            }
+            return false;
         }
         public int value;
         public int itemId;
@@ -98,7 +110,7 @@ public void readFile(String host, String inputFileUri) throws Exception{
     }
 
     public void getHeadTable(double minSupp){
-        long minNum = Math.round(originTransNum * minSupp);
+        minNum = Math.round(originTransNum * minSupp);
 //        Iterator<Map.Entry<Integer, Integer>> iterator = map.entrySet().iterator();
         Iterator<ArrayList<Integer>> transIterator = trans.iterator();
         maxLevel = 0;
@@ -173,6 +185,49 @@ public void readFile(String host, String inputFileUri) throws Exception{
         printTree(root);
         System.out.println("end of tree");
     }
+
+
+    public void getFreq(){
+        HashMap<Integer, ArrayList<Map.Entry<Integer, Integer>>> freqMap = new HashMap<>();
+        // conditional base, for top item, is empty
+        for(int i = sortedItems.size() - 1; i >= 1; i--){
+            Integer itemId = sortedItems.get(i);
+            HashMap<Integer, Integer> tmpMap = new HashMap<Integer, Integer>();
+            Node itemNode = headTable.get(itemId).itemNode;
+            while(itemNode != null){  // 找到以itemId为叶子节点的树
+                Node parent = itemNode;  // include leaf node
+                // Node parent = itemNode.parentNode;  // does not include leaf node
+                while(parent != root){  // 直到根节点
+                    if(tmpMap.containsKey(parent.itemId)){
+                        tmpMap.put(parent.itemId, tmpMap.get(parent.itemId) + itemNode.value);
+                    } else{
+                        tmpMap.put(parent.itemId, itemNode.value);
+                    }
+                    parent = parent.parentNode;
+                }
+                itemNode = itemNode.itemNode;
+            }
+            Iterator<Map.Entry<Integer, Integer>> iterator = tmpMap.entrySet().iterator(); 
+            while(iterator.hasNext()){
+                // delete item does not satisfy min_supp
+                Map.Entry<Integer, Integer> entry = iterator.next();
+                if(entry.getValue() < minNum){
+                    iterator.remove();
+                }
+            }
+            freqMap.put(itemId, new ArrayList<>(tmpMap.entrySet()));
+            System.out.println(tmpMap);
+        }
+        System.out.println(freqMap);
+    }
+    /*
+    {1=2, 2=2, 3=2, 5=2, 6=2}
+{1=2, 3=2, 4=2}
+{1=2, 2=2, 3=2, 5=2}
+{1=5, 3=5, 5=4, 7=5}
+{1=6, 3=6, 5=8}
+{1=8, 3}
+    */
 
     public void printTree(Node root){
         if(root.childNodes.isEmpty()){
