@@ -220,14 +220,6 @@ public void readFile(String host, String inputFileUri) throws Exception{
         }
         System.out.println(freqMap);
     }
-    /*
-    {1=2, 2=2, 3=2, 5=2, 6=2}
-{1=2, 3=2, 4=2}
-{1=2, 2=2, 3=2, 5=2}
-{1=5, 3=5, 5=4, 7=5}
-{1=6, 3=6, 5=8}
-{1=8, 3}
-    */
 
     public void printTree(Node root){
         if(root.childNodes.isEmpty()){
