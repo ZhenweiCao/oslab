@@ -1,0 +1,18 @@
+.idea/*
+target/*
+
+# Data file #
+data/*
+
+# Log file #
+*.log
+
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
