@@ -6,6 +6,9 @@ Lab of advanced operating system.
 - hadoop file system
 
 # Build && Run
+
+函数入口在pom.xml的mainClass中，输入包名.类名即可，示例：org.example.HDFSTest, org.test.Main
+
 1. start hdfs
     ```
    start-dfs.sh

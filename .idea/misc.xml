@@ -10,4 +10,26 @@
   <component name="ProjectRootManager" version="2" languageLevel="JDK_1_8" default="true" project-jdk-name="corretto-1.8" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
+  <component name="UnattendedHostPersistenceState">
+    <option name="openedFilesInfos">
+      <list>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="266" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/java/org/example/HDFSTest.java" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="1297" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/pom.xml" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="33" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/scala/org/test/HelloWorld.scala" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="140" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/README.md" />
+        </OpenedFileInfo>
+      </list>
+    </option>
+  </component>
 </project>
