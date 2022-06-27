@@ -5,6 +5,13 @@
       <option name="excludeList">
         <list>
           <option value="org.apache.spark:spark-sql_2.11" />
+          <option value="org.apache.hadoop:hadoop-common" />
+          <option value="org.apache.hadoop:hadoop-client" />
+          <option value="org.apache.hadoop:hadoop-hdfs" />
+          <option value="org.apache.spark:spark-core_2.11" />
+          <option value="org.apache.spark:spark-streaming_2.11" />
+          <option value="org.apache.spark:spark-hive_2.11" />
+          <option value="org.apache.spark:spark-mllib_2.11" />
         </list>
       </option>
     </inspection_tool>

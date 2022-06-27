@@ -14,20 +14,32 @@
     <option name="openedFilesInfos">
       <list>
         <OpenedFileInfo>
-          <option name="caretOffset" value="266" />
+          <option name="caretOffset" value="3607" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/java/org/example/FPGrowth_SparkML.java" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="67" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/java/org/example/HdfsUtils.java" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="664" />
           <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/java/org/example/HDFSTest.java" />
         </OpenedFileInfo>
         <OpenedFileInfo>
-          <option name="caretOffset" value="1297" />
+          <option name="caretOffset" value="20433" />
+          <option name="fileUrl" value="jar://$MAVEN_REPOSITORY$/org/apache/spark/spark-core_2.11/2.2.0/spark-core_2.11-2.2.0-sources.jar!/org/apache/spark/api/java/JavaRDDLike.scala" />
+        </OpenedFileInfo>
+        <OpenedFileInfo>
+          <option name="caretOffset" value="612" />
           <option name="fileUrl" value="file://$PROJECT_DIR$/pom.xml" />
         </OpenedFileInfo>
         <OpenedFileInfo>
-          <option name="caretOffset" value="33" />
-          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/scala/org/test/HelloWorld.scala" />
+          <option name="caretOffset" value="51" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/java/org/example/FPGrowthTest.java" />
         </OpenedFileInfo>
         <OpenedFileInfo>
-          <option name="caretOffset" value="140" />
-          <option name="fileUrl" value="file://$PROJECT_DIR$/README.md" />
+          <option name="caretOffset" value="3067" />
+          <option name="fileUrl" value="file://$PROJECT_DIR$/src/main/java/org/example/SparkTest.java" />
         </OpenedFileInfo>
       </list>
     </option>
