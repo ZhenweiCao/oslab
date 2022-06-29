@@ -37,13 +37,17 @@ import org.apache.spark.sql.Dataset;
 import org.apache.spark.sql.Row;
 import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.api.java.UDF1;
 import org.apache.spark.sql.types.*;
 import org.apache.commons.lang3.StringUtils;
 import scala.collection.JavaConverters;
+import scala.collection.Seq;
+import scala.collection.immutable.Set;
 
 
 import java.net.URI;
 
+import static org.apache.spark.sql.functions.callUDF;
 
 
 public class SparkTest {
@@ -54,6 +58,10 @@ public class SparkTest {
         public FileSystem fs;
         public JavaSparkContext sc;
         public SparkSession ss;
+        public String transFilePath;
+        public String userFilePath;
+        public String patternPath;
+        public String resultPath;
         public Config(String inputDir, String outputDir, String tmpDir, FileSystem fs, JavaSparkContext sc, SparkSession ss){
             this.inputDir = inputDir;
             this.outputDir = outputDir;
@@ -61,8 +69,16 @@ public class SparkTest {
             this.fs = fs;
             this.sc = sc;
             this.ss = ss;
+            // 数据文件和用户文件
+            // this.transFilePath = "hdfs://Master:9000/user/test1";
+            this.transFilePath = inputDir + "/trans_1K.txt";
+            this.userFilePath = inputDir + "/test_2W.txt";
+            this.patternPath = outputDir + "/pattern.txt";
+            this.resultPath = outputDir + "/result.txt";
         }
     }
+
+    private static List<Row> simpleRules;
 
     public Config initConfig(String[] args){
         // 配置hdfs信息
@@ -88,8 +104,8 @@ public class SparkTest {
 //            }
             // 运行时，要求输出文件目录不存在
              if (outputDirExists){
-                     fs.delete(new Path(args[1]), true);
-              }
+                 fs.delete(new Path(args[1]), true);
+             }
         } catch (Exception e){
             System.out.println("hdfs io error, err: " + e.toString());
             return null;
@@ -127,9 +143,9 @@ public class SparkTest {
         }
         Dataset<Row> transDF;
         try{
-            transDF = sparkTest.readFile(envConfig, envConfig.inputDir);
+            transDF = sparkTest.readFile(envConfig, envConfig.transFilePath);
         }catch (Exception e){
-            System.out.println("read file failed, err: " + e.toString());
+            System.out.println("read transcation file failed, err: " + e.toString());
             return;
         }
         transDF.show();
@@ -141,11 +157,56 @@ public class SparkTest {
                 .fit(transDF);
         Dataset<Row> freqItems = model.freqItemsets();
         sparkTest.generatePattern(freqItems, envConfig);
-        Dataset<Row> simpleRules = sparkTest.simplifyAssociationRules(model.associationRules())
+        simpleRules = sparkTest.simplifyAssociationRules(envConfig, model.associationRules()).collectAsList();
 
+        Dataset<Row> userDF;
+        try{
+            userDF = sparkTest.readFile(envConfig, envConfig.userFilePath);
+        }catch (Exception e){
+            System.out.println("read user file failed, err: " + e.toString());
+            return;
+        }
 
+        envConfig.ss.udf().register("predictUDF", predictUDF, DataTypes.StringType);
+        userDF = userDF.withColumn("predict", callUDF("predictUDF", userDF.col("items")));
+        //userDF.show(false);
+        userDF.toJavaRDD().map(line-> (line.getString(1).trim().length() != 0) ? line.getString(1): "0").saveAsTextFile(envConfig.resultPath);
         System.out.println("finished");
     }
+
+    private static UDF1 predictUDF = new UDF1<Seq, String>() {
+        public String call(Seq item) throws Exception {
+            String result = "";
+            Set itemset = item.toSet();
+//            System.out.println("=====");
+//            System.out.println(itemset);
+
+            for (Row rule: simpleRules) {
+                Boolean flag = true;
+                List<String> A = rule.getList(0);
+                for (String A_item: A) {
+                    if (!itemset.contains(A_item)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                if (flag) {
+                    // 关联规则中前项被用户数据包含
+                    String temp = rule.getList(1).toString();
+                    String consequent = temp.substring(1, temp.length() - 1);
+                    if (!itemset.contains(consequent)) {
+                        // 关联规则后项未被用户数据包含，找到结果
+                        result = consequent;
+//                        System.out.println("Rule matched!");
+//                        System.out.println(rule.getList(0).toString() + "=>" + rule.getList(1).toString() +
+//                                " Conf: " + rule.getDouble(2));
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+    };
 
     public Dataset<Row> generatePattern(Dataset<Row> freqItems, Config config){
         // 生成频繁模式，并写入文件
@@ -156,14 +217,13 @@ public class SparkTest {
 
         // 写入频繁模式，可以通过设置repartition(1)，让结果输出到单个文件中
         orderedDataset.toJavaRDD().map(line ->
-                StringUtils.join(line.getList(0), " " )).saveAsTextFile(config.outputDir);
+                StringUtils.join(line.getList(0), " " )).saveAsTextFile(config.patternPath);
         return orderedDataset;
     }
 
-    public Dataset<Row> simplifyAssociationRules(Dataset<Row> originRules){
+    public Dataset<Row> simplifyAssociationRules(Config config, Dataset<Row> originRules){
         // 去掉关联规则中到重复前项
         originRules.show(false);
-        originRules.createOrReplaceGlobalTempView("AssociationRules");
         Dataset<Row> s1 = originRules.groupBy("antecedent").max("confidence").
                 withColumnRenamed("max(confidence)", "confidence");
         List<String> list = new ArrayList<>();
@@ -171,50 +231,15 @@ public class SparkTest {
         list.add("confidence");
         Dataset<Row> simpleRules = originRules.join(s1, JavaConverters.asScalaIteratorConverter(list.iterator()).asScala().toSeq())
                 .select(originRules.col("antecedent"), originRules.col("consequent"), originRules.col("confidence"));
+        simpleRules.createOrReplaceGlobalTempView("AssociationRules");
         System.out.println("Simplified Association Rules: ");
+        Dataset<Row> orderedSimpleRules = config.ss.sql("select antecedent, consequent, confidence from global_temp.AssociationRules sort by confidence, consequent");
+        System.out.println("rules");
         simpleRules.show();
+        orderedSimpleRules.show();
         return simpleRules;
     }
 
-    public void GetPattern(Config config){
-        JavaRDD<String> data = config.sc.textFile(config.inputDir, 10);
-
-        JavaRDD<List<String>> transactions = data.map(line -> Arrays.asList(line.trim().split(" ")));
-//        JavaRDD<List<String>> transactions = data.map(
-//                new Function<String, List<String>>(){
-//                    @Override
-//                    public List<String> call(String line){
-//                        return Arrays.asList(line.trim().split(" "));
-//                    }
-//                }
-//        );
-
-        List<Row> dataset = new ArrayList<>();
-        List<Row> initDataset = new ArrayList<>();
-        // data.aggregate((0, 0)-> ((x, y) -> (x._1 + y, x._2 + 1), (x, y) -> (x._1 + y._1, x._2 + y._2)))
-        FPGrowth fpg = new FPGrowth()
-                .setMinSupport(0.092)
-                .setNumPartitions(50);
-        FPGrowthModel<String> model = fpg.run(transactions);
-        //model.freqItemsets().toJavaRDD().saveAsTextFile("hdfs://Master:9000/user/test1_result");
-
-        // TODO: 可以使用aggrevate 函数生成list
-
-
-        //JavaRDD<FPGrowth.FreqItemset<String>> freqItems = model.freqItemsets().toJavaRDD();
-
-        //Dataset<Row> dataset = freqItems.toDs();
-       // dataset. saveAsTextFile("hdfs://Master:9000/user/oslab/dataset");
-        //List<FPGrowth.FreqItemset<String>> s = freqItems.take(10);
-//        JavaRDD<String> sortedFreqItems = freqItems.map(
-//                new Function<FPGrowth.FreqItemset<String>, String>(){
-//                    public String call (FPGrowth.FreqItemset<String> x){
-//                        return "test";
-//                    }
-//                }
-//        );
-        //sortedFreqItems.saveAsTextFile(config.outputDir);
-    }
 
     public Dataset<Row> readFile(Config config, String uri) throws Exception{
         FSDataInputStream is = config.fs.open(new Path(uri));
