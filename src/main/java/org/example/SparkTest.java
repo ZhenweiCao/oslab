@@ -99,7 +99,7 @@ public class SparkTest {
                 fs.delete(new Path(envConfig.patternPath), true);
             }
             if (fs.exists(new Path(envConfig.resultPath))) {
-                fs.delete(new Path(envConfig.patternPath), true);
+                fs.delete(new Path(envConfig.resultPath), true);
             }
         } catch (Exception e) {
             System.out.println("hdfs io error, err: " + e.toString());
@@ -186,9 +186,9 @@ public class SparkTest {
 
     public Dataset<Row> generatePattern(Dataset<Row> freqItems, Config config) {
         // 生成频繁模式，并写入文件
-        freqItems.createOrReplaceGlobalTempView("FreqItems");
+        freqItems.createOrReplaceTempView("FreqItems");
         // 将频繁模式排序
-        Dataset<Row> orderedDataset = config.ss.sql("select items, freq from global_temp.FreqItems order by items asc");
+        Dataset<Row> orderedDataset = config.ss.sql("select items, freq from FreqItems order by items asc");
         // orderedDataset.show(43);
 
         // 写入频繁模式，可以通过设置repartition(1)，让结果输出到单个文件中
@@ -208,10 +208,10 @@ public class SparkTest {
         Dataset<Row> simpleRules = originRules
                 .join(s1, JavaConverters.asScalaIteratorConverter(list.iterator()).asScala().toSeq())
                 .select(originRules.col("antecedent"), originRules.col("consequent"), originRules.col("confidence"));
-        simpleRules.createOrReplaceGlobalTempView("AssociationRules");
+        simpleRules.createOrReplaceTempView("AssociationRules");
         System.out.println("Simplified Association Rules: ");
         Dataset<Row> orderedSimpleRules = config.ss.sql(
-                "select antecedent, consequent, confidence from global_temp.AssociationRules sort by confidence, consequent");
+                "select antecedent, consequent, confidence from AssociationRules sort by confidence, consequent");
         System.out.println("rules");
         simpleRules.show();
         orderedSimpleRules.show();

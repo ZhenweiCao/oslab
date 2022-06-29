@@ -38,7 +38,18 @@ import org.apache.spark.sql.RowFactory;
 import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.types.*;
 
-import javax.xml.crypto.Data;
+import scala.collection.Seq;
+import scala.collection.immutable.Set;
+import scala.collection.mutable.WrappedArray;
+
+
+import static jodd.datetime.JDateTimeDefault.format;
+import static org.apache.spark.sql.functions.*;
+
+import org.apache.spark.sql.api.java.UDF1;
+import org.apache.spark.sql.expressions.UserDefinedFunction;
+
+import org.apache.spark.sql.types.DataTypes;
 
 import static jodd.datetime.JDateTimeDefault.format;
 // $example off$
@@ -51,6 +62,7 @@ import static jodd.datetime.JDateTimeDefault.format;
  * </pre>
  */
 public class FPGrowth_SparkML {
+    private static List<Row> rules;
     public static void main(String[] args) throws Exception {
         SparkSession spark = SparkSession
                 .builder()
@@ -64,38 +76,80 @@ public class FPGrowth_SparkML {
         FileSystem fs = FileSystem.get(URI.create(host), config);
 
         // $example on$
-        // String uri = "/user/oslab/TestCase/trans_10W.txt";
-        String uri = "/user/oslab/TestCase/trans_1w.txt";
+        String uri = "/user/test1";
         Dataset<Row> transDF = readFile(spark, fs, uri);
 
         FPGrowthModel model = new FPGrowth()
                 .setItemsCol("items")
-                .setMinSupport(0.092)
+                .setMinSupport(0.2)
                 .setMinConfidence(0)
-                .setNumPartitions(2)
+                .setNumPartitions(1)
                 .fit(transDF);
 
         // Display frequent itemsets.
+        System.out.println("this is count");
         System.out.println(model.freqItemsets().count());
-      model.freqItemsets()
-                .select("items")
-                .write().mode("append")
-                .format("text")
-                .save("hdfs://Master:9000/user/oslab/tmp/pattern.txt");
-	    // model.freqItemsets().rdd().saveAsTextFile("/tmp/pattern.csv");
+        Dataset<Row> dataset = model.freqItemsets().orderBy("items");
+        //dataset.orderBy("freq").show(43);
+        dataset.show(43);
+
+        System.out.println("this is to string");
 
         // Display generated association rules.
-//        model.associationRules().show();
+        model.associationRules().createOrReplaceGlobalTempView("databss");
+        rules = spark.sql("select antecedent, consequent, confidence from global_temp.databss order by confidence desc")
+                .collectAsList();
+        model.associationRules().show(43);
 //
-//        // transform examines the input items against all the association rules and summarize the
-//        // consequents as prediction
-//        uri = "/user/oslab/TestCase/test_2W.txt";
-//        Dataset<Row> testDF = readFile(spark, fs, uri, 200);
+        // transform examines the input items against all the association rules and summarize the
+        // consequents as prediction
+        uri = "/user/test1";
+        Dataset<Row> testDF = readFile(spark, fs, uri, 200);
 //        model.transform(testDF).show();
-        // $example off$
+
+        spark.udf().register("predictUDF", predictUDF, DataTypes.StringType);
+        testDF = testDF.withColumn("predict", callUDF("predictUDF", testDF.col("items")));
+
+        testDF.show(false);
+        testDF.printSchema();
 
         spark.stop();
     }
+
+    private static UDF1 predictUDF = new UDF1<Seq, String>() {
+        public String call(Seq item) throws Exception {
+            String result = "";
+            Set itemset = item.toSet();
+            System.out.println("=====");
+            System.out.println(itemset);
+
+            for (Row rule: rules) {
+                Boolean flag = true;
+                List<String> A = rule.getList(0);
+                for (String A_item: A) {
+                    if (!itemset.contains(A_item)) {
+                        flag = false;
+                        break;
+                    }
+                }
+                if (flag) {
+                    // 关联规则中前项被用户数据包含
+                    String temp = rule.getList(1).toString();
+                    String consequent = temp.substring(1, temp.length() - 1);
+                    if (!itemset.contains(consequent)) {
+                        // 关联规则后项未被用户数据包含，找到结果
+                        result = consequent;
+                        System.out.println("Rule matched!");
+                        System.out.println(rule.getList(0).toString() + "=>" + rule.getList(1).toString() +
+                                " Conf: " + rule.getDouble(2));
+                        break;
+                    }
+                }
+            }
+            return result;
+        }
+    };
+
     public static Dataset<Row> readFile(SparkSession spark, FileSystem fs, String uri, int... threshold) throws Exception {
         FSDataInputStream is = fs.open(new Path(uri));
         BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
