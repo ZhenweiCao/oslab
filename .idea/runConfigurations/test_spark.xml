@@ -2,7 +2,7 @@
   <configuration default="false" name="test_spark" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.example.SparkTest" />
     <module name="oslab" />
-    <option name="PROGRAM_PARAMETERS" value="hdfs://Master:9000/user/oslab/TestCase/trans_1w.txt hdfs://Master:9000/user/oslab/TestCase/output hdfs://Master:9000/user/oslab/TestCase/tmp" />
+    <option name="PROGRAM_PARAMETERS" value="hdfs://Master:9000/user/oslab/TestCase hdfs://Master:9000/user/oslab/TestCase/output hdfs://Master:9000/user/oslab/TestCase/tmp" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

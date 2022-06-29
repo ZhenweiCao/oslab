@@ -5,15 +5,12 @@ import org.apache.hadoop.fs.*;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import org.apache.hadoop.io.IOUtils;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.*;
-import java.util.stream.Stream;
 
 
-public class FPGrowth {
-    public FPGrowth() {
+public class FPGrowthTest {
+    public FPGrowthTest() {
     }
 
     public ArrayList<ArrayList<Integer>> trans;  // a list of transaction
@@ -30,9 +27,9 @@ public class FPGrowth {
 //    public double minSupp = 0.092;
 
     public static void main(String[] args) {
-        FPGrowth fpGrowth = new FPGrowth();
+        FPGrowthTest fpGrowth = new FPGrowthTest();
         try {
-            String host = "hdfs://127.0.0.1:9000/";
+            String host = "hdfs://Master:9000/";
             //String inputFileUri = "/user/oslab/data/TestCase/test_2W.txt";
             String inputFileUri = "/user/test1";
             double minSupp = 0.2;

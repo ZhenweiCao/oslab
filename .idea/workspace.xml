@@ -5,14 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="c9cd72a1-2f72-4114-a43d-421ddf475735" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/.SparkTest.java.swp" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/test_spark.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/test_spark.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/oslab.iml" beforeDir="false" afterPath="$PROJECT_DIR$/oslab.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/FPGrowthTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/FPGrowthTest.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/org/example/FPGrowth_SparkML.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/FPGrowth_SparkML.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/org/example/SparkTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/org/example/SparkTest.java" afterDir="false" />
     </list>
+    <list id="f9363d3b-02c2-49c7-a32f-6cedab23c1b3" name="Changes by ustc" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -64,7 +67,7 @@
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;project.structure.last.edited&quot;: &quot;Libraries&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Global Libraries&quot;,
     &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
     &quot;project.structure.side.proportion&quot;: &quot;0.5670588&quot;,
     &quot;settings.editor.selected.configurable&quot;: &quot;com.maddyhome.idea.vim.ui.VimEmulationConfigurable&quot;
@@ -91,6 +94,39 @@
         <option name="Make" enabled="true" />
       </method>
     </configuration>
+    <configuration name="MBA" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="MBA" />
+      <module name="oslab" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="org.example.MBA" type="Application" factoryName="Application" temporary="true">
+      <option name="MAIN_CLASS_NAME" value="org.example.MBA" />
+      <module name="oslab" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="org.example.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="test" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="org.example.test" />
+      <module name="oslab" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="org.example.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
     <configuration name="scala" type="ScalaScriptConsoleRunConfiguration" factoryName="Scala Console" temporary="true" show_console_on_std_err="false" show_console_on_std_out="false">
       <module name="oslab" />
       <option name="allowRunningInParallel" value="false" />
@@ -109,11 +145,17 @@
       <item itemvalue="Application.FPGrowth" />
       <item itemvalue="Application.test_spark" />
       <item itemvalue="Application.FPGrowth_SparkML" />
+      <item itemvalue="Application.MBA" />
+      <item itemvalue="Application.org.example.MBA" />
+      <item itemvalue="Application.test" />
       <item itemvalue="Application.HelloWorld" />
       <item itemvalue="Scala REPL.scala" />
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Application.test" />
+        <item itemvalue="Application.org.example.MBA" />
+        <item itemvalue="Application.MBA" />
         <item itemvalue="Application.HelloWorld" />
       </list>
     </recent_temporary>
@@ -148,7 +190,13 @@
       <workItem from="1656307186089" duration="3222000" />
       <workItem from="1656332670640" duration="75000" />
       <workItem from="1656332784144" duration="2040000" />
-      <workItem from="1656336274369" duration="2309000" />
+      <workItem from="1656336274369" duration="6244000" />
+      <workItem from="1656464132124" duration="6676000" />
+      <workItem from="1656492927847" duration="1199000" />
+      <workItem from="1656495036221" duration="606000" />
+      <workItem from="1656495853647" duration="2218000" />
+      <workItem from="1656507287832" duration="1458000" />
+      <workItem from="1656509956959" duration="1998000" />
     </task>
     <servers />
   </component>
@@ -165,27 +213,6 @@
         </entry>
       </map>
     </option>
-  </component>
-  <component name="XDebuggerManager">
-    <breakpoint-manager>
-      <breakpoints>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/org/example/SparkTest.java</url>
-          <line>80</line>
-          <option name="timeStamp" value="5" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/org/example/SparkTest.java</url>
-          <line>136</line>
-          <option name="timeStamp" value="7" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="java-line">
-          <url>file://$PROJECT_DIR$/src/main/java/org/example/SparkTest.java</url>
-          <line>129</line>
-          <option name="timeStamp" value="9" />
-        </line-breakpoint>
-      </breakpoints>
-    </breakpoint-manager>
   </component>
   <component name="XSLT-Support.FileAssociations.UIState">
     <expand />

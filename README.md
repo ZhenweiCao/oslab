@@ -44,3 +44,8 @@ Lab of advanced operating system.
    ```
    spark-submit --master spark://Master:7077  --class org.example.SparkTest --name "SecondTest" --executor-memory 40G --driver-memory 40G /home/oslab/Codes/oslab/target/oslab-1.0-SNAPSHOT-jar-with-dependencies.jar arg1 arg2 arg3
    ```
+   org.example.SparkTest为类名，程序读取输入目录下trans.txt作为交易信息的输入文件，user.txt作为用户信息。结果写入输出目录下pattern和result子目录，分别对应频繁模式文件和最后推荐结果文件。
+   在集群内的运行命令如下（spark-submit）已加入PATH变量：
+   ```
+   spark-submit --master spark://Master:7077  --class org.example.SparkTest --name "SecondTest" --executor-memory 40G --driver-memory 40G /home/oslab/Codes/oslab/target/oslab-1.0-SNAPSHOT-jar-with-dependencies.jar hdfs://Master:9000/user/oslab/TestCase hdfs://Master:9000/user/oslab/TestCase hdfs://Master:9000/user/oslab/TestCase 
+   ```
