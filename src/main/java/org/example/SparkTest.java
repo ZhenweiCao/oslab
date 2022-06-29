@@ -16,10 +16,15 @@
  */
 
 package org.example;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
+import org.apache.spark.SparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.SparkConf;
@@ -27,8 +32,19 @@ import org.apache.spark.api.java.function.Function;
 import org.apache.spark.mllib.fpm.AssociationRules;
 import org.apache.spark.mllib.fpm.FPGrowth;
 import org.apache.spark.mllib.fpm.FPGrowthModel;
+import org.apache.spark.rdd.RDD;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.RowFactory;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.*;
+import org.apache.commons.lang3.StringUtils;
+import scala.collection.JavaConverters;
+
 
 import java.net.URI;
+
+
 
 public class SparkTest {
     public class Config{
@@ -37,12 +53,14 @@ public class SparkTest {
         public String tmpDir;
         public FileSystem fs;
         public JavaSparkContext sc;
-        public Config(String inputDir, String outputDir, String tmpDir, FileSystem fs, JavaSparkContext sc){
+        public SparkSession ss;
+        public Config(String inputDir, String outputDir, String tmpDir, FileSystem fs, JavaSparkContext sc, SparkSession ss){
             this.inputDir = inputDir;
             this.outputDir = outputDir;
             this.tmpDir = tmpDir;
             this.fs = fs;
             this.sc = sc;
+            this.ss = ss;
         }
     }
 
@@ -62,14 +80,20 @@ public class SparkTest {
         boolean outputDirExists = false;
         try {
             outputDirExists = fs.exists(new Path(args[1]));
-            if(!outputDirExists){  // 如果输出目录不存在，则创建一个目录
-                fs.mkdirs(new Path(args[1]));
-            }
+//            if(!outputDirExists){  // 如果输出目录不存在，则创建一个目录
+//                fs.mkdirs(new Path(args[1]));
+//            } else {
+//                fs.delete(new Path(args[1]), true);
+//                fs.mkdirs(new Path(args[1]));
+//            }
+            // 运行时，要求输出文件目录不存在
+             if (outputDirExists){
+                     fs.delete(new Path(args[1]), true);
+              }
         } catch (Exception e){
             System.out.println("hdfs io error, err: " + e.toString());
             return null;
         }
-
         // 配置spark集群信息
         SparkConf sparkConf = new SparkConf();
         // 调试模式下设置Master地址，命令行向集群提交时可以不设置
@@ -79,15 +103,17 @@ public class SparkTest {
         sparkConf.set("spark.submit.deployMode", "cluster");  // 以集群模式运行
         sparkConf.setAppName("FirstTest");
         JavaSparkContext sc = new JavaSparkContext(sparkConf);
+        SparkSession ss = SparkSession.builder().getOrCreate();
         if(args.length >= 3){
-            return new Config(args[0], args[1], args[2], fs, sc);
+            return new Config(args[0], args[1], args[2], fs, sc, ss);
         } else {
             return new Config(
                     "hdfs://Master:9000/user/oslab/TestCase/trans_10W.txt",
                     "hdfs://Master:9000/user/oslab/TestCase/outputDir",
                     "hdfs://Master:9000/user/oslab/TestCase/tmpDir",
                     fs,
-                    sc
+                    sc,
+                    ss
             );
         }
     }
@@ -99,41 +125,112 @@ public class SparkTest {
             System.out.println("Init environment config error");
             return;
         }
-        sparkTest.GetPattern(envConfig);
-        //JavaRDD<String> data = sc.textFile("hdfs://Master:9000/user/test1", 1);
+        Dataset<Row> transDF;
+        try{
+            transDF = sparkTest.readFile(envConfig, envConfig.inputDir);
+        }catch (Exception e){
+            System.out.println("read file failed, err: " + e.toString());
+            return;
+        }
+        transDF.show();
+        org.apache.spark.ml.fpm.FPGrowthModel model = new org.apache.spark.ml.fpm.FPGrowth()
+                .setItemsCol("items")
+                .setMinSupport(0.2)
+                .setMinConfidence(0)
+                .setNumPartitions(1)
+                .fit(transDF);
+        Dataset<Row> freqItems = model.freqItemsets();
+        sparkTest.generatePattern(freqItems, envConfig);
+        Dataset<Row> simpleRules = sparkTest.simplifyAssociationRules(model.associationRules())
 
-        //model. (sc, "file://home/oslab/result.txt");
 
-        //AssociationRules arules = new AssociationRules().setMinConfidence(0.092);
-        //JavaRDD<AssociationRules.Rule<String>> results = arules.run(freqItemsets);
-        //results.saveAsTextFile("hdfs://202.38.72.23:9000/user/oslab/result.txt");
-        //JavaRDD<FPGrowth.FreqItemset<String>> freqItemsets = sc.parallelize(Arrays.asList(data));
         System.out.println("finished");
     }
+
+    public Dataset<Row> generatePattern(Dataset<Row> freqItems, Config config){
+        // 生成频繁模式，并写入文件
+        freqItems.createOrReplaceGlobalTempView("FreqItems");
+        // 将频繁模式排序
+        Dataset<Row> orderedDataset= config.ss.sql("select items, freq from global_temp.FreqItems order by items asc");
+        // orderedDataset.show(43);
+
+        // 写入频繁模式，可以通过设置repartition(1)，让结果输出到单个文件中
+        orderedDataset.toJavaRDD().map(line ->
+                StringUtils.join(line.getList(0), " " )).saveAsTextFile(config.outputDir);
+        return orderedDataset;
+    }
+
+    public Dataset<Row> simplifyAssociationRules(Dataset<Row> originRules){
+        // 去掉关联规则中到重复前项
+        originRules.show(false);
+        originRules.createOrReplaceGlobalTempView("AssociationRules");
+        Dataset<Row> s1 = originRules.groupBy("antecedent").max("confidence").
+                withColumnRenamed("max(confidence)", "confidence");
+        List<String> list = new ArrayList<>();
+        list.add("antecedent");
+        list.add("confidence");
+        Dataset<Row> simpleRules = originRules.join(s1, JavaConverters.asScalaIteratorConverter(list.iterator()).asScala().toSeq())
+                .select(originRules.col("antecedent"), originRules.col("consequent"), originRules.col("confidence"));
+        System.out.println("Simplified Association Rules: ");
+        simpleRules.show();
+        return simpleRules;
+    }
+
     public void GetPattern(Config config){
         JavaRDD<String> data = config.sc.textFile(config.inputDir, 10);
+
         JavaRDD<List<String>> transactions = data.map(line -> Arrays.asList(line.trim().split(" ")));
-//        JavaRDD<FPGrowth.FreqItemset<String>> transactions = data.map(
-//                new Function<String, FPGrowth.FreqItemset<String>>(){
-//                    public FPGrowth.FreqItemset<String> call (String x){
-//                        return new FPGrowth.FreqItemset<String>(x.split(" "), 20L);
+//        JavaRDD<List<String>> transactions = data.map(
+//                new Function<String, List<String>>(){
+//                    @Override
+//                    public List<String> call(String line){
+//                        return Arrays.asList(line.trim().split(" "));
 //                    }
 //                }
 //        );
+
+        List<Row> dataset = new ArrayList<>();
+        List<Row> initDataset = new ArrayList<>();
+        // data.aggregate((0, 0)-> ((x, y) -> (x._1 + y, x._2 + 1), (x, y) -> (x._1 + y._1, x._2 + y._2)))
         FPGrowth fpg = new FPGrowth()
                 .setMinSupport(0.092)
-                .setNumPartitions(10);
+                .setNumPartitions(50);
         FPGrowthModel<String> model = fpg.run(transactions);
         //model.freqItemsets().toJavaRDD().saveAsTextFile("hdfs://Master:9000/user/test1_result");
-        JavaRDD<FPGrowth.FreqItemset<String>> freqItems = model.freqItemsets().toJavaRDD();
-        List<FPGrowth.FreqItemset<String>> s = freqItems.take(10);
-        JavaRDD<String> sortedFreqItems = freqItems.map(
-                new Function<FPGrowth.FreqItemset<String>, String>(){
-                    public String call (FPGrowth.FreqItemset<String> x){
-                        return "test";
-                    }
-                }
-        );
-        sortedFreqItems.saveAsTextFile(config.outputDir);
+
+        // TODO: 可以使用aggrevate 函数生成list
+
+
+        //JavaRDD<FPGrowth.FreqItemset<String>> freqItems = model.freqItemsets().toJavaRDD();
+
+        //Dataset<Row> dataset = freqItems.toDs();
+       // dataset. saveAsTextFile("hdfs://Master:9000/user/oslab/dataset");
+        //List<FPGrowth.FreqItemset<String>> s = freqItems.take(10);
+//        JavaRDD<String> sortedFreqItems = freqItems.map(
+//                new Function<FPGrowth.FreqItemset<String>, String>(){
+//                    public String call (FPGrowth.FreqItemset<String> x){
+//                        return "test";
+//                    }
+//                }
+//        );
+        //sortedFreqItems.saveAsTextFile(config.outputDir);
     }
+
+    public Dataset<Row> readFile(Config config, String uri) throws Exception{
+        FSDataInputStream is = config.fs.open(new Path(uri));
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(is));
+        String lineText;
+        List<Row> data = new ArrayList<>();
+        int index = 0;
+        while ((lineText = bufferedReader.readLine()) != null) {
+            data.add(index, RowFactory.create(Arrays.asList(lineText.split(" "))));
+            index += 1;
+        }
+
+        StructType schema = new StructType(new StructField[]{ new StructField(
+                "items", new ArrayType(DataTypes.StringType, true), false, Metadata.empty())
+        });
+        return config.ss.createDataFrame(data, schema);
+    }
+
 }
